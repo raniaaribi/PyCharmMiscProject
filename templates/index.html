@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconnaissance de Gestes</title>
+    <style>
+        :root {
+            --primary-color: #FF66B2;
+            --primary-dark: #FF3385;
+            --text-light: #fff;
+            --text-dark: #333;
+            --background: #f1f1f1;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary-color);
+            z-index: -1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAG0lEQVQYV2NkYGD4z8DAwMgABXAGNgGwSgwVAFbmAgXQdISfAAAAAElFTkSuQmCC');
+            background-size: 4px;
+        }
+
+        .background::before {
+            content: "✋🤚✋🤚✋🤚";
+            font-size: clamp(100px, 20vw, 200px);
+            color: rgba(255, 255, 255, 0.2);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .container {
+            width: min(80%, 900px);
+            padding: 2rem;
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            margin: 1rem;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: clamp(2em, 5vw, 3em);
+            margin-bottom: 1.25rem;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        video {
+            width: 100%;
+            max-width: 700px;
+            aspect-ratio: 16/9;
+            border-radius: 15px;
+            border: 5px solid var(--primary-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+            display: none;
+            object-fit: cover;
+        }
+
+        video:hover {
+            transform: scale(1.02);
+        }
+
+        .footer {
+            margin-top: 2rem;
+            font-size: 1rem;
+            color: var(--text-dark);
+        }
+
+        .button {
+            background-color: var(--primary-color);
+            color: var(--text-light);
+            padding: 1rem 1.5rem;
+            font-size: 1.25rem;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            margin-top: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .stop-button {
+            background-color: #FF4D94;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                width: 95%;
+                padding: 1rem;
+            }
+
+            .button {
+                width: 100%;
+                margin-top: 1rem;
+            }
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .button.loading .loading {
+            display: block;
+        }
+
+        .button.loading span {
+            visibility: hidden;
+        }
+    .prediction {
+            margin-top: 20px;
+            font-size: 24px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        #video-feed {
+            width: 100%;
+            max-width: 700px;
+            aspect-ratio: 16/9;
+            border-radius: 15px;
+            border: 5px solid var(--primary-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            margin: 20px auto;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+
+    <div class="container">
+        <h1>Reconnaissance de Gestes</h1>
+
+        <button class="button" id="startButton">
+            <span>Démarrer la reconnaissance</span>
+            <div class="loading"></div>
+        </button>
+
+        <button class="button stop-button" id="stopButton">
+            <span>Arrêter</span>
+        </button>
+
+        <img id="video-feed" alt="Flux vidéo">
+        <div class="prediction" id="prediction"></div>
+
+        <div class="footer">
+            <p>Un projet de détection de gestes à l'aide d'IA. Essayez différents signes de la main !</p>
+        </div>
+    </div>
+    <script>
+
+
+    const videoFeed = document.getElementById('video-feed');
+const startButton = document.getElementById('startButton');
+const stopButton = document.getElementById('stopButton');
+const predictionDiv = document.getElementById('prediction');
+let isRunning = false;
+let lastPrediction = ''; // Stocke la dernière prédiction pour éviter les répétitions
+
+const startRecognition = () => {
+    startButton.classList.add('loading');
+    videoFeed.src = '/video_feed';
+    videoFeed.style.display = 'block';
+    startButton.style.display = 'none';
+    stopButton.style.display = 'inline-block';
+    isRunning = true;
+    pollPredictions();
+};
+
+const stopRecognition = () => {
+    videoFeed.style.display = 'none';
+    stopButton.style.display = 'none';
+    startButton.style.display = 'inline-block';
+    startButton.classList.remove('loading');
+    predictionDiv.textContent = '';
+    isRunning = false;
+};
+
+const speakText = (text) => {
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel(); // Annule la lecture précédente pour éviter la surcharge
+    }
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    synth.speak(utterance);
+};
+
+const pollPredictions = async () => {
+    while (isRunning) {
+        try {
+            const response = await fetch('/get_prediction');
+            const data = await response.json();
+
+            if (data.prediction && data.prediction !== lastPrediction) {
+                lastPrediction = data.prediction;
+                predictionDiv.textContent = `Geste détecté : ${data.prediction}`;
+                speakText(data.prediction); // Lecture vocale uniquement pour une nouvelle prédiction
+            }
+        } catch (error) {
+            console.error('Erreur lors de la récupération de la prédiction:', error);
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Attente de 1 seconde pour éviter la surcharge
+    }
+};
+
+startButton.addEventListener('click', startRecognition);
+stopButton.addEventListener('click', stopRecognition);
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && isRunning) {
+        stopRecognition();
+    }
+});
+
+window.addEventListener('beforeunload', stopRecognition);</script>
+
+</body>
+</html>

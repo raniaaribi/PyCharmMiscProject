@@ -1,0 +1,1 @@
+('C:\\Users\\aribi\\PyCharmMiscProject\\build\\inference\\PYZ-00.pyz', [])
